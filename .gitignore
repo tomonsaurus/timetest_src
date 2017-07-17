@@ -1,0 +1,10 @@
+
+#/.vagrant
+/timetest/result/*
+!/timtest/result/.gitkeep
+*.log
+*.swp
+*.retry
+
+
+

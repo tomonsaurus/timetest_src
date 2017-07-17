@@ -1,0 +1,10 @@
+---
+- hosts: all
+  gather_facts: False
+  become: yes
+
+  tasks:
+    - name:  change time
+      shell: date -s {{var_time}}
+
+

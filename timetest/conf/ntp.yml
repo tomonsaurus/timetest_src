@@ -1,0 +1,12 @@
+---
+- hosts: all
+  gather_facts: False
+  become: yes
+
+  tasks:
+    - name:  exec ntpdate
+      shell: ntpdate ntp.nict.jp
+
+
+
+

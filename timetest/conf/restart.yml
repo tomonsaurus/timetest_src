@@ -1,0 +1,12 @@
+---
+- hosts: all
+  gather_facts: False
+  become: yes
+  vars:
+    user_password: vagrant
+  tasks:
+    - name:  crond restart
+      service: name=crond state=restarted
+    - name:  atd restart
+      service: name=atd   state=restarted
+
