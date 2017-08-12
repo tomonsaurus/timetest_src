@@ -1,5 +1,6 @@
-[local]
+[web]
 192.168.33.20  ansible_ssh_pass=vagrant
 
-
+[web2]
+192.168.33.30  ansible_ssh_pass=vagrant
 

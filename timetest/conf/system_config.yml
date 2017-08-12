@@ -1,11 +1,6 @@
 #################################
 # SYSTEM SETTINGS
 
-# 時間関連のシステムコマンド群
-
-
-# date
-cmd_set_date: " date -s "
 
 
 

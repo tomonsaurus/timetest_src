@@ -1,0 +1,12 @@
+---
+- hosts: all
+  gather_facts: False
+  become: yes
+
+  tasks:
+    - name:  prerun cmd 1
+      shell: "cat /dev/null > /home/vagrant/src/batch/cronexec.log"
+
+
+
+

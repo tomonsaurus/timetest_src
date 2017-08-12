@@ -1,0 +1,21 @@
+---
+- hosts: all
+  #gather_facts: False
+  become: yes
+
+  tasks:
+    - name:  change time
+      shell: date -s {{var_time}}
+      
+    - name:  crond[family Redhat] restart
+      service: name=crond state=restarted
+      when: ansible_os_family == 'RedHat'
+      
+    - name:  cron[family Debian] restart
+      service: name=cron state=restarted
+      when: ansible_os_family == 'Debian'
+      
+      
+    - name:  atd restart
+      service: name=atd   state=restarted
+

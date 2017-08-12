@@ -4,6 +4,9 @@ require 'infrataster/rspec'
 Infrataster::Server.define(
   :app,             # name
   '192.168.33.20',  # ip address
+  
+  ssh: {user: 'vagrant', password: 'vagrant'},
+  
   vagrant: true     # for vagrant VM
 )
 

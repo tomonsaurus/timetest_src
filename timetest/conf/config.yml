@@ -6,8 +6,8 @@ interval: 3600
 
 # 開始の日時指定
 # 終わりの日時指定
-startday: "2017/8/1 11:00:00"
-endday:   "2017/8/1 15:00:00"
+startday: "2017/8/1 09:00:00"
+endday:   "2017/8/1 16:00:00"
 
 # 常にスキップする時間 ２桁の０埋め　分まで。秒は入れない。"01:03"
 skiptime:
@@ -16,34 +16,73 @@ skiptime:
 
 # 特殊追加日付
 addday:
-  - "2017/8/1 9:30:00"
+  - "2017/8/1 09:30:00"
   - "2017/8/1 10:02:00"
+  - "2017/8/1 10:59:00"
   - "2017/8/2 23:00:00"
 
-# interval設定では入らないが必要な時間を列挙
 
-# TODOスキップする特定の日付の特定の時間
+
+# 全体の実行前に実行するプログラム
+# ansibleにて、テスト対象サーバーのcronログをクリア
+prerun_exec:
+  - prerun_exec.yml
+
 
 
 # ある時間設定になったあと、常に実行するコマンド
 # 実行プログラムの結果を取得して判定するなどの検証プログラムを設定したりする。
 post_exec:
-  - "wget -P ./result  http://192.168.33.20/limitpage.php "
-#  - "cd ~/timetest_src/timetest/testcmd; rspec "
+  # 日時設定後、常に実行するテスト　infratasterでweb表示のチェック
+  - "cd ~/timetest_src/timetest/testcmd_web1; rspec spec/html.rb"
 
+# 特定日時実行テスト
+post_exec_limit:
+  '2017-08-01 09:00:00':
+     - "cd ~/timetest_src/timetest/testcmd_web1; rspec spec/close.rb"
+     - "cd ~/timetest_src/timetest/testcmd_web1; rspec spec/cron.rb"
+     
+  '2017-08-01 09:30:00':
+    - "cd ~/timetest_src/timetest/testcmd_web1; rspec spec/close.rb"
+    - "cd ~/timetest_src/timetest/testcmd_web2; rspec spec/close.rb"
+  '2017-08-01 10:00:00': 
+    - "cd ~/timetest_src/timetest/testcmd_web1; rspec spec/open.rb"
+    - "cd ~/timetest_src/timetest/testcmd_web2; rspec spec/close.rb"
+    - "cd ~/timetest_src/timetest/testcmd_web1; rspec spec/cron.rb"
+  '2017-08-01 10:02:00': 
+    - "cd ~/timetest_src/timetest/testcmd_web1; rspec spec/open.rb"
+    - "cd ~/timetest_src/timetest/testcmd_web2; rspec spec/close.rb"
+  '2017-08-01 10:59:00': 
+    - "cd ~/timetest_src/timetest/testcmd_web2; rspec spec/close.rb"
+  '2017-08-01 11:00:00': 
+    - "cd ~/timetest_src/timetest/testcmd_web1; rspec spec/open.rb"
+    - "cd ~/timetest_src/timetest/testcmd_web2; rspec spec/open.rb"
+    - "cd ~/timetest_src/timetest/testcmd_web1; rspec spec/cron.rb"
+  '2017-08-01 12:00:00': 
+    - "cd ~/timetest_src/timetest/testcmd_web1; rspec spec/open.rb"
+    - "cd ~/timetest_src/timetest/testcmd_web2; rspec spec/close.rb"
+    - "cd ~/timetest_src/timetest/testcmd_web1; rspec spec/cron.rb"
+  '2017-08-01 13:00:00': 
+    - "cd ~/timetest_src/timetest/testcmd_web1; rspec spec/close.rb"
+    - "cd ~/timetest_src/timetest/testcmd_web2; rspec spec/close.rb"
+    - "cd ~/timetest_src/timetest/testcmd_web1; rspec spec/cron.rb"
+  '2017-08-01 14:00:00': 
+    - "cd ~/timetest_src/timetest/testcmd_web1; rspec spec/close.rb"
+    - "cd ~/timetest_src/timetest/testcmd_web2; rspec spec/close.rb"
+    - "cd ~/timetest_src/timetest/testcmd_web1; rspec spec/cron.rb"
+  '2017-08-01 15:00:00': 
+    - "cd ~/timetest_src/timetest/testcmd_web1; rspec spec/close.rb"
+    - "cd ~/timetest_src/timetest/testcmd_web2; rspec spec/close.rb"
+  '2017-08-01 16:00:00': 
+    - "cd ~/timetest_src/timetest/testcmd_web1; rspec spec/close.rb"
+    - "cd ~/timetest_src/timetest/testcmd_web2; rspec spec/close.rb"
 
-# TODO 2 特定時間設定になったあと、実行するコマンド
-# TODO 2 接続サーバー設定
-# TODO 2 接続サーバー毎の実行プログラム
 
 
 
 # 時間設定時、その時間の前のX秒前にする
-time_before_set: 8
+time_before_set: 5
 
 # 時間設定後、sleepする時間（cron、atはこの間にバックグラウンドで実行されているはず）
-time_sleep_sec: 5
-
-# TODO 2 特定日時でsleepする時間
-# TODO 2 対象サーバーOSの抽象化
+time_sleep_sec: 7
 

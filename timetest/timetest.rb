@@ -60,6 +60,10 @@ class Timetest < Thor
     puts "** set_config start"
     set_config()
     
+    puts "** prerun start"
+    prerun()
+    
+    
     puts "** set_time_array start"
     set_time_array()
     
@@ -97,19 +101,6 @@ class Timetest < Thor
       puts "*** set config_flie: " + conf_path  + '/' + config_file
       
       ################################################
-      # システム設定ファイル
-      system_config_file = 'system_config.yml'
-      
-      #### system_config.ymlファイル
-      
-      
-      unless(File.exist?(conf_path  + '/' + system_config_file) )
-        puts "[error] system_config file not exist. system_config_flie: " + conf_path  + '/' + system_config_file
-        exit
-      end
-      puts "*** system_config_flie: " + conf_path  + '/' + system_config_file
-      
-      ################################################
       #### 対象サーバーリストファイル
       hosts  =options['hosts']
       
@@ -123,19 +114,36 @@ class Timetest < Thor
       # 設定ファイル読込
       
       @config = YAML.load_file(conf_path + '/' + config_file)
-      @config.merge( YAML.load_file(conf_path + '/' + system_config_file) )
+      #@config.merge( YAML.load_file(conf_path + '/' + system_config_file) )
       
       @config["hosts_file"] = hosts
       @config["conf_path"]  = conf_path
     end
     
+    def prerun()
+      
+      @config["prerun_exec"].each do |cmd_yml|
+        
+        cmd_prerun_exec  = "ansible-playbook #{@config['conf_path']}/#{cmd_yml} -i #{@config['conf_path']}/#{@config['hosts_file']} #{@ansible_debug_option}  " #=>ok
+        
+        if(@debug)
+           puts cmd_prerun_exec
+        end
+        result = system(cmd_prerun_exec) 
+        
+        p result
+          
+      end
+    
+    end
+        
     def set_time_array
       
       startday = Time.parse(@config["startday"])
-      puts "*** startday: " + startday.strftime("%Y-%m-%d %H:%M:%S")
+      puts "*** 開始日時: " + startday.strftime("%Y-%m-%d %H:%M:%S")
       
       endday   = Time.parse(@config["endday"])
-      puts "*** endday:  " + endday.strftime("%Y-%m-%d %H:%M:%S")
+      puts "*** 終了日時: " + endday.strftime("%Y-%m-%d %H:%M:%S")
       
       ###########################################
       # 設定時間配列作成
@@ -179,15 +187,15 @@ class Timetest < Thor
       
         c_timef = c_time.strftime("%Y-%m-%d %H:%M:%S")
       
-        puts "*** c_time:" + c_timef
+        puts "*** 設定候補日時:" + c_timef
         
         if c_time < Time.parse(@config["startday"])
-          puts "*** c_time too eary. next #{c_timef}"
+          puts "*** 設定候補日時　開始日時より早いためスキップ #{c_timef}"
           next
         end
         
         if c_time > Time.parse(@config["endday"])
-          puts "*** c_time too late. next #{c_timef}"
+          puts "*** 設定候補日時　終了日時より遅いためスキップ #{c_timef}"
           next
         end
         
@@ -205,41 +213,60 @@ class Timetest < Thor
           end
         end
         if skip_flag == 1
-          puts "*** skip time for config : #{check_time}"
+          puts "*** スキップ設定日時のためスキップ : #{check_time}"
           next
         end
         
-        # 時間設定
+        # 時間設定 ansibleの実行を軽くするため時間設定とcrond, atdのrestartを同時に行う。
         c_time_before = c_time - @config["time_before_set"]  # cronを動かすために一定時間前に設定する。
         
         c_string = c_time_before.strftime("%Y-%m-%d %H:%M:%S") #=> "2009-03-01 00:31:21"
         
-        cmd_set_time_c_cmd  = "ansible-playbook #{@config['conf_path']}/changetime.yml -i #{@config['conf_path']}/#{@config['hosts_file']}  --extra-vars \"var_time='\\\"#{c_string}\\\"'\"  #{@ansible_debug_option}  " #=>ok
+        cmd_set_time_c_cmd  = "ansible-playbook #{@config['conf_path']}/set_time.yml -i #{@config['conf_path']}/#{@config['hosts_file']}  --extra-vars \"var_time='\\\"#{c_string}\\\"'\"  #{@ansible_debug_option}  " #=>ok
         
-        puts cmd_set_time_c_cmd
-        
-        system(cmd_set_time_c_cmd)
-        
+        puts "日時設定: #{c_string}, restart crond and atd"
+        puts cmd_set_time_c_cmd  if @debug
         result = system(cmd_set_time_c_cmd) 
         
-        p result
-        # crond atd restart
-        system("ansible-playbook #{@config['conf_path']}/restart.yml -i #{@config['conf_path']}/#{@config['hosts_file']}  #{@ansible_debug_option} ")
+        p result if @debug
         
-        puts "*** sleep: " + @config["time_sleep_sec"].to_s + "sec"
+        puts "*** sleep: " + @config["time_sleep_sec"].to_s + " 秒"
         sleep(@config["time_sleep_sec"])
         
+        puts "======================================================="
+        puts "テスト開始　テスト対象日時：#{c_timef}"
         # 時間設定後、実行するプログラム群
         @config["post_exec"].each do |c_exec|
-          puts "*** exec #{c_exec}"
+          if(@debug)
+            puts "*** 実行コマンド： #{c_exec}"
+          end
           system(c_exec)
         end
+        
+        @config["post_exec_limit"].each do |key, value|
+          
+          if c_timef == key
+            value.each do |cmd|
+              cmd = "export TEST_SERVER_TIME='#{c_timef}';" + cmd
+              puts "*** 実行コマンド： #{cmd}"
+              system(cmd)
+            
+            end
+            
+            break
+            
+          end
+        end
+        puts "テスト終了　テスト対象日時：#{c_timef}"
+        puts "======================================================="
+
       end
       
     end
     
     # 現在日時にもどす。
     def exec_ntpdate()
+      puts "現在日時にもどす。"
       result = system("ansible-playbook #{@config['conf_path']}/ntp.yml -i #{@config['conf_path']}/#{@config['hosts_file']}   #{@ansible_debug_option}  ")
       p result
     end
