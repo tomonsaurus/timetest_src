@@ -1,3 +1,4 @@
+# encoding: utf-8
 
 =begin
 
@@ -54,27 +55,34 @@ class Timetest < Thor
   option  :debug , :aliases => :d, :type => :boolean
   
   def exec()
-    
-    puts "* start"
-    
-    puts "** set_config start"
-    set_config()
-    
-    puts "** prerun start"
-    prerun()
-    
-    
-    puts "** set_time_array start"
-    set_time_array()
-    
-    puts "** exec_each_time start"
-    exec_each_time()
-    
-    
-    puts "** exec_ntpdate start"
-    exec_ntpdate()
-    
-    puts "* end"  
+    begin
+      puts "* start"
+      
+      puts "** set_config start"
+      set_config()
+      
+      puts "** prerun start"
+      prerun()
+      
+      
+      puts "** set_time_array start"
+      set_time_array()
+      
+      puts "** exec_each_time start"
+      exec_each_time()
+      
+      
+      puts "** exec_ntpdate start"
+      exec_ntpdate()
+      
+      puts "* end"  
+      
+    rescue Interrupt
+      p 'exec Ctrl-C!'
+      puts "** exec_ntpdate start"
+      exec_ntpdate()
+    end
+
   
   end
 
@@ -151,14 +159,19 @@ class Timetest < Thor
       c_time = startday
       
       @time_array =[]
-      while c_time <= endday do
-        @time_array << c_time
-        c_time = c_time + @config["interval"]
-        n = n+1
-        if( n > 30000) # 無限ループ回避　安全弁
-          puts "error"
-          exit
+      
+      if (@config["only_setting_time_flag"] != 1) 
+      
+        while c_time <= endday do
+          @time_array << c_time
+          c_time = c_time + @config["interval"]
+          n = n+1
+          if( n > 30000) # 無限ループ回避　安全弁
+            puts "error"
+            exit
+         end
         end
+        
       end
       
       ######################
